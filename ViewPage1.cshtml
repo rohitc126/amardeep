@@ -1,0 +1,202 @@
+﻿
+<script type="text/javascript">
+    function OnFileUploadComplete(s, e) {
+        var file = e.callbackData;
+        if (file) {
+            var h = document.getElementById(s.name.replace("uplBillCopy", "hdnUploadedFile"));
+            if (h) h.value = file;
+        }
+    }
+</script>
+
+<dx:ASPxGridView ID="dg" runat="server" AutoGenerateColumns="False"
+                 KeyFieldName="ID" OnRowUpdating="dg_RowUpdating"
+                 OnHtmlEditFormCreated="dg_HtmlEditFormCreated">
+
+    <Columns>
+        <dx:GridViewDataColumn FieldName="DocumentPath" Caption="Upload File" VisibleIndex="999">
+            <EditItemTemplate>
+
+                <dx:ASPxUploadControl ID="uplBillCopy" runat="server"
+                                      UploadMode="Advanced"
+                                      ClientInstanceName="uplBillCopy_temp"
+                                      OnFileUploadComplete="uplBillCopy_FileUploadComplete"
+                                      ClientSideEvents-FileUploadComplete="OnFileUploadComplete">
+                    <ValidationSettings MaxFileSize="10485760"
+                                        AllowedFileExtensions=".pdf,.jpg,.png" />
+                </dx:ASPxUploadControl>
+
+                <dx:ASPxButton ID="btnUpload" runat="server" Text="Upload"
+                               AutoPostBack="False">
+                </dx:ASPxButton>
+                <asp:HiddenField ID="hdnUploadedFile" runat="server" />
+            </EditItemTemplate>
+        </dx:GridViewDataColumn>
+
+    </Columns>
+</dx:ASPxGridView>
+
+
+Code-Behind (Upload Page)
+
+Protected Sub uplBillCopy_FileUploadComplete(sender As Object, e As FileUploadCompleteEventArgs)
+
+    If e.UploadedFile.IsValid Then
+
+        Dim folder As String = Server.MapPath("~/Upload/")
+        If Not Directory.Exists(folder) Then Directory.CreateDirectory(folder)
+
+        Dim fileName As String = DateTime.Now.ToString("yyyyMMddHHmmss_") &
+                                 Path.GetFileName(e.UploadedFile.FileName)
+
+        e.UploadedFile.SaveAs(Path.Combine(folder, fileName))
+
+        e.CallbackData = fileName
+    End If
+
+End Sub
+
+
+
+Protected Sub dg_HtmlEditFormCreated(sender As Object, e As ASPxGridViewEditFormEventArgs) _
+    Handles dg.HtmlEditFormCreated
+
+    Dim upload As ASPxUploadControl =
+        TryCast(dg.FindEditFormTemplateControl("uplBillCopy"), ASPxUploadControl)
+
+    Dim btn As ASPxButton =
+        TryCast(dg.FindEditFormTemplateControl("btnUpload"), ASPxButton)
+
+    If upload IsNot Nothing AndAlso btn IsNot Nothing Then
+
+        upload.ClientInstanceName = "uplBillCopy_" & dg.EditingRowVisibleIndex
+
+        btn.ClientSideEvents.Click =
+            "function(s,e){ uplBillCopy_" &
+            dg.EditingRowVisibleIndex &
+            ".Upload(); }"
+
+    End If
+
+End Sub
+
+
+Protected Sub dg_RowUpdating(sender As Object, e As ASPxDataUpdatingEventArgs) _
+    Handles dg.RowUpdating
+
+    Dim newFile As String = ""
+    Dim hdn As HiddenField =
+        TryCast(dg.FindEditFormTemplateControl("hdnUploadedFile"), HiddenField)
+
+    If hdn IsNot Nothing AndAlso hdn.Value <> "" Then
+        newFile = hdn.Value
+    Else
+        newFile = e.OldValues("DocumentPath") & ""
+    End If
+
+    objDashBoard.CM_UpdateRecord(
+        CInt(e.Keys("ID")),
+        e.NewValues("CompanyNo") & "",
+        e.NewValues("CompanyName") & "",
+        e.NewValues("LedName") & "",
+        e.NewValues("BillName") & "",
+        CDate(e.NewValues("PaymentDate")),
+        e.NewValues("Remark") & "",
+        e.NewValues("Remark1") & "",
+        e.NewValues("ContactPerson") & "",
+        Login_Code,
+        DateTime.Now,
+        newFile
+    )
+
+    e.Cancel = True
+    dg.CancelEdit()
+    Display()
+
+End Sub
+
+
+
+✅ 2. View Page for Document Download
+
+
+<dx:GridViewDataHyperLinkColumn FieldName="DocumentPath" Caption="View File" VisibleIndex="999">
+    <PropertiesHyperLinkEdit Text="View"
+                             Target="_blank"
+                             NavigateUrlFormatString="~/Upload/{0}">
+    </PropertiesHyperLinkEdit>
+</dx:GridViewDataHyperLinkColumn>
+
+
+
+
+or
+
+
+
+<dx:ASPxGridView ID="dgLog" runat="server" AutoGenerateColumns="False">
+    <Columns>
+        <dx:GridViewDataTextColumn FieldName="DocumentPath" Caption="Attachment"
+                                   Width="140px">
+            <DataItemTemplate>
+                <%# If Not String.IsNullOrEmpty(Eval("DocumentPath"))
+                Then "<a href='../Uploads/" & Eval("DocumentPath") & "' target='_blank'>View File</a>"
+                Else "No File" End If %>
+            </DataItemTemplate>
+        </dx:GridViewDataTextColumn>
+    </Columns>
+</dx:ASPxGridView>
+
+
+
+ or with  ICON
+
+
+
+<dx:GridViewDataHyperLinkColumn FieldName="DocumentPath"
+                                Caption="Preview"
+                                VisibleIndex="999">
+
+    <PropertiesHyperLinkEdit Target="_blank"
+                             NavigateUrlFormatString="~/Upload/{0}"
+                             ImageUrl="~/images/view-icon.png"
+                             ToolTip="Preview File">
+    </PropertiesHyperLinkEdit>
+
+</dx:GridViewDataHyperLinkColumn>
+
+
+
+
+Required Icon /images/view-icon.png
+
+
+or
+
+
+
+<dx:GridViewDataHyperLinkColumn FieldName="DocumentPath"
+                                Caption="Preview"
+                                VisibleIndex="999">
+    <DataItemTemplate>
+        <PropertiesHyperLinkEdit Target="_blank"
+                                 NavigateUrlFormatString="~/Upload/{0}"
+                                 ImageUrl="~/images/view-icon.png"
+                                 ToolTip="Preview File">
+        </PropertiesHyperLinkEdit>
+
+        <% If Eval("DocumentPath") IsNot Nothing AndAlso Eval("DocumentPath") <> "" Then %>
+        <a href='<%# "~/Upload/" & Eval("DocumentPath") %>' target="_blank">
+            <img src="~/images/view-icon.png" width="16" height="16" />
+        </a>
+        <% Else %>
+        <span style="color:gray;">No File</span>
+        <% End If %>
+    </DataItemTemplate>
+</dx:GridViewDataHyperLinkColumn>
+
+
+and lastly change in sp CM_GetOutstandingData
+add this column in  log table
+C.DocumentPath
+
