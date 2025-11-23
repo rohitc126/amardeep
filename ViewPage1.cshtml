@@ -219,3 +219,25 @@ add this column in  log table
 C.DocumentPath
 
 
+with validation
+Protected Sub uplBillCopy_FileUploadComplete(sender As Object, e As FileUploadCompleteEventArgs)
+
+    If e.UploadedFile IsNot Nothing AndAlso e.UploadedFile.IsValid Then
+        Dim folder As String = "D:\amadeeep\upload"
+
+        If Not Directory.Exists(folder) Then
+            Directory.CreateDirectory(folder)
+        End If
+
+        Dim fileName As String = DateTime.Now.ToString("yyyyMMddHHmmss_") &
+                                 Path.GetFileName(e.UploadedFile.FileName)
+
+        e.UploadedFile.SaveAs(Path.Combine(folder, fileName))
+        e.CallbackData = fileName
+    Else
+        ' Handle the case where no file is uploaded
+        e.CallbackData = "ERROR: Please upload a document."
+    End If
+
+End Sub
+
