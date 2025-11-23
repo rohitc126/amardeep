@@ -9,6 +9,20 @@
     }
 </script>
 
+
+updated------------------------
+function OnFileUploadComplete(s, e) {
+    var file = e.callbackData;
+    if (file) {
+        var h = document.getElementById("hdnUploadedFile");
+        if (h) {
+            h.value = file;
+            alert("Uploaded file: " + file); // for debugging
+        }
+    }
+}
+---------------------------------------------------
+
 <dx:ASPxGridView ID="dg" runat="server" AutoGenerateColumns="False"
                  KeyFieldName="ID" OnRowUpdating="dg_RowUpdating"
                  OnHtmlEditFormCreated="dg_HtmlEditFormCreated">
@@ -44,6 +58,10 @@ Protected Sub uplBillCopy_FileUploadComplete(sender As Object, e As FileUploadCo
     If e.UploadedFile.IsValid Then
 
         Dim folder As String = Server.MapPath("~/Upload/")
+or--------------------------------------------
+Dim folder As String = "D:\amadeeep\upload"
+
+
         If Not Directory.Exists(folder) Then Directory.CreateDirectory(folder)
 
         Dim fileName As String = DateTime.Now.ToString("yyyyMMddHHmmss_") &
@@ -140,7 +158,7 @@ or
                                    Width="140px">
             <DataItemTemplate>
                 <%# If Not String.IsNullOrEmpty(Eval("DocumentPath"))
-                Then "<a href='../Uploads/" & Eval("DocumentPath") & "' target='_blank'>View File</a>"
+                Then "<a href='../Upload/" & Eval("DocumentPath") & "' target='_blank'>View File</a>"
                 Else "No File" End If %>
             </DataItemTemplate>
         </dx:GridViewDataTextColumn>
@@ -199,4 +217,5 @@ or
 and lastly change in sp CM_GetOutstandingData
 add this column in  log table
 C.DocumentPath
+
 
